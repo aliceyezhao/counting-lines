@@ -52,6 +52,7 @@ class PythonReader(Reader):
                     blanklines += 1
                 if line.startswith("#"):
                     comments += 1
+
             PythonReader.totallines += linecounter
             PythonReader.totalblanks += blanklines
             PythonReader.totalcomments += comments
@@ -86,6 +87,7 @@ class JavaReader(Reader):
                     blanklines += 1
                 if line.startswith("//"):
                     comments += 1
+
             JavaReader.totallines += linecounter
             JavaReader.totalblanks += blanklines
             JavaReader.totalcomments += comments
@@ -113,18 +115,17 @@ def createReader(filename):
 
 
 def read_dir(dirname):
-    pathlength = len(dirname) + 1
     dirs = os.listdir(dirname)
     for d in dirs:
         fullpath = "{0}/{1}".format(dirname, d)
         if os.path.isfile(fullpath):
             reader = createReader(fullpath)
-            arr = reader.read_file(name)
+            arr = reader.read_file(fullpath)
             #print_stats(arr)
         else:
             read_dir(fullpath)
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def print_stats(arr):
@@ -135,7 +136,7 @@ def print_stats(arr):
     except IndexError as err:
         pass
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 if len(sys.argv) < 2:
