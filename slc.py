@@ -2,27 +2,29 @@ import sys
 import os.path
 
 
-class Reader:
-    instantiated = 0
-    totallines = 0
-    totalblanks = 0
+class Counters:
 
     def __init__(self):
-        Reader.instantiated += 1
+        self.totalfiles = 0
+        self.totallines = 0
+        self.totalblanks = 0
+        self.totalcomments = 0
+
+
+class Reader:
+
+    def __init__(self, counters):
+        self.counters = counters
 
     def read_file(self, filename):
         try:
             f = open(filename)
-            linecounter = 0
-            blanklines = 0
+            self.counters.totalfiles += 1
 
             for line in f:
-                linecounter += 1
+                self.counters.totallines += 1
                 if line.isspace():
-                    blanklines += 1
-            Reader.totallines += linecounter
-            Reader.totalblanks += blanklines
-            return [linecounter, blanklines]
+                    self.counters.totalblanks += 1
 
         except IOError as err:
             pass
@@ -32,49 +34,40 @@ class Reader:
 
 
 class PythonReader(Reader):
-    instantiated = 0
-    totallines = 0
-    totalblanks = 0
-    totalcomments = 0
 
-    def __init__(self):
-        PythonReader.instantiated += 1
+    def __init__(self, counters):
+        super(PythonReader, self).__init__(counters)
 
     def read_file(self, filename):
         try:
             f = open(filename)
-            linecounter = 0
-            blanklines = 0
-            comments = 0
+            self.counters.totalfiles += 1
             flagsingle = False
             flagdouble = False
 
             for line in f:
-                linecounter += 1
+                self.counters.totallines += 1
 
                 if flagsingle:
-                    comments += 1
-                    flagsingle = line.find("'''") == -1
+                    self.counters.totalcomments += 1
+                    if line.find("'''") < 0:
+                        flagsingle = False
                 if flagdouble:
-                    comments += 1
-                    flagdouble = line.find('"""') == -1
+                    self.counters.totalcomments += 1
+                    if line.find('"""') < 0:
+                        flagdouble = False
 
                 if line.isspace():
-                    blanklines += 1
+                    self.counters.totalblanks += 1
                 if line.startswith("#"):
-                    comments += 1
+                    self.counters.totalcomments += 1
 
-                if line.startswith("'''"):
+                if line.find("'''") > 0:
                     flagsingle = True
-                    comments += 1
-                if line.startswith('"""'):
-                    comments += 1
+                    self.counters.totalcomments += 1
+                if line.find('"""') > 0:
+                    self.counters.totalcomments += 1
                     flagdouble = True
-
-            PythonReader.totallines += linecounter
-            PythonReader.totalblanks += blanklines
-            PythonReader.totalcomments += comments
-            return [linecounter, blanklines, comments]
 
         except IOError as err:
             pass
@@ -84,39 +77,29 @@ class PythonReader(Reader):
 
 
 class JavaReader(Reader):
-    instantiated = 0
-    totallines = 0
-    totalblanks = 0
-    totalcomments = 0
 
-    def __init__(self):
-        JavaReader.instantiated += 1
+    def __init__(self, counters):
+        super(JavaReader, self).__init__(counters)
 
     def read_file(self, filename):
         try:
             f = open(filename)
-            linecounter = 0
-            blanklines = 0
-            comments = 0
+            self.counters.totalfiles += 1
             flag = False
 
             for line in f:
-                linecounter += 1
+                self.counters.totallines += 1
                 if flag:
-                    comments += 1
-                    flag = line.find("*/") == -1
+                    self.counters.totalcomments += 1
+                    if line.find("*/") < 0:
+                        flag = False
                 if line.isspace():
-                    blanklines += 1
+                    self.counters.totalblanks += 1
                 if line.startswith("//"):
-                    comments += 1
-                if line.startswith("/*") or line.startswith("/**"):
+                    self.counters.totalcomments += 1
+                if line.find("/*") > 0 or line.find("/**") > 0:
                     flag = True
-                    comments += 1
-
-            JavaReader.totallines += linecounter
-            JavaReader.totalblanks += blanklines
-            JavaReader.totalcomments += comments
-            return [linecounter, blanklines, comments]
+                    self.counters.totalcomments += 1
 
         except IOError as err:
             pass
@@ -127,13 +110,58 @@ class JavaReader(Reader):
 # ----------------------------------------------------------------------
 
 
+counters_dict = dict()
+
+
 def create_reader(filename):
-    if filename.endswith(".java"):
-        return JavaReader()
-    elif filename.endswith(".py"):
-        return PythonReader()
+
+    if filename.endswith(".py"):
+        if "Python" in counters_dict:
+            c = counters_dict["Python"]
+        else:
+            c = Counters()
+            counters_dict["Python"] = c
+        return PythonReader(c)
+
+    elif filename.endswith(".java"):
+        if "Java" in counters_dict:
+            c = counters_dict["Java"]
+        else:
+            c = Counters()
+            counters_dict["Java"] = c
+        return JavaReader(c)
+
+    elif filename.endswith(".cpp"):
+        if "C++" in counters_dict:
+            c = counters_dict["C++"]
+        else:
+            c = Counters()
+            counters_dict["C++"] = c
+        return JavaReader(c)
+
+    elif filename.endswith(".c"):
+        if "C" in counters_dict:
+            c = counters_dict["C"]
+        else:
+            c = Counters()
+            counters_dict["C"] = c
+        return JavaReader(c)
+
+    elif filename.endswith(".cs"):
+        if "C Shell" in counters_dict:
+            c = counters_dict["C Shell"]
+        else:
+            c = Counters()
+            counters_dict["C Shell"] = c
+        return JavaReader(c)
+
     else:
-        return Reader()
+        if "Other" in counters_dict:
+            c = counters_dict["Other"]
+        else:
+            c = Counters()
+            counters_dict["Other"] = c
+        return Reader(c)
 
 # ----------------------------------------------------------------------
 
@@ -143,22 +171,37 @@ def read_dir(dirname):
     for d in dirs:
         fullpath = "{0}/{1}".format(dirname, d)
         if os.path.isfile(fullpath):
-            reader = create_reader(fullpath)
-            arr = reader.read_file(fullpath)
-            #print_stats(arr)
+            r = create_reader(fullpath)
+            r.read_file(fullpath)
         else:
             read_dir(fullpath)
 
 # ----------------------------------------------------------------------
 
 
-def print_stats(arr):
-    print("Lines       : ", arr[0])
-    print("Empty lines : ", arr[1])
-    try:
-        print("Comments    : ", arr[2])
-    except IndexError as err:
-        pass
+def print_stats():
+    files = 0
+    lines = 0
+    blanks = 0
+    comments = 0
+    for key in counters_dict:
+        print("\n")
+        print(key)
+        counterobject = counters_dict[key]
+        print("Number of files : ", counterobject.totalfiles)
+        print("Lines           : ", counterobject.totallines)
+        print("Empty lines     : ", counterobject.totalblanks)
+        print("Comments        : ", counterobject.totalcomments)
+        files += counterobject.totalfiles
+        lines += counterobject.totallines
+        blanks += counterobject.totalblanks
+        comments += counterobject.totalcomments
+    print("\n")
+    print("Total files       : ", files)
+    print("Total lines       : ", lines)
+    print("Total empty lines : ", blanks)
+    print("Total comments    : ", comments)
+    print("\n")
 
 # ----------------------------------------------------------------------
 
@@ -172,31 +215,14 @@ name = sys.argv[1]
 print("\n")
 print(name, "\n")
 
-if os.path.isfile(name):
-    reader = create_reader(name)
-    arr = reader.read_file(name)
-    print_stats(arr)
+# if os.path.isfile(name):
+#     reader = create_reader(name)
+#     reader.read_file(name)
+#     print_stats()
 
-elif os.path.isdir(name):
+if os.path.isdir(name) or os.path.isfile(name):
     read_dir(name)
-
-    print("{0} Python files".format(PythonReader.instantiated))
-    print_stats([PythonReader.totallines, PythonReader.totalblanks, PythonReader.totalcomments])
-    print("\n")
-
-    print("{0} Java files".format(JavaReader.instantiated))
-    print_stats([JavaReader.totallines, JavaReader.totalblanks, JavaReader.totalcomments])
-    print("\n")
-
-    print("{0} other files".format(Reader.instantiated))
-    print_stats([Reader.totallines, Reader.totalblanks])
-    print("\n")
-
-    print("{0} TOTAL files".format(Reader.instantiated + JavaReader.instantiated + PythonReader.instantiated))
-    print_stats([PythonReader.totallines + JavaReader.totallines + Reader.totallines,
-                 PythonReader.totalblanks + JavaReader.totalblanks + Reader.totalblanks,
-                 PythonReader.totalcomments + JavaReader.totalcomments])
-    print("\n")
+    print_stats()
 
 else:
     print("No such file or directory: {0} \n".format(name))
