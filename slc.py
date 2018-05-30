@@ -1,6 +1,7 @@
 import sys
 import os.path
 
+
 class Reader:
     instantiated = 0
     totallines = 0
@@ -80,12 +81,24 @@ class JavaReader(Reader):
             linecounter = 0
             blanklines = 0
             comments = 0
+            flag = False
 
             for line in f:
+                print(flag, linecounter)
                 linecounter += 1
+                if flag:
+                    print("a") #4
+                    comments += 1
+                    flag = not line.endswith("*/")
                 if line.isspace():
+                    print("b") #10
                     blanklines += 1
                 if line.startswith("//"):
+                    print("c") #5
+                    comments += 1
+                if line.startswith("/*") or line.startswith("/**"):
+                    print("d") #1
+                    flag = True
                     comments += 1
 
             JavaReader.totallines += linecounter
@@ -99,11 +112,10 @@ class JavaReader(Reader):
         except UnicodeDecodeError as err:
             pass
 
-
 # ----------------------------------------------------------------------
 
 
-def createReader(filename):
+def create_reader(filename):
     if filename.endswith(".java"):
         return JavaReader()
     elif filename.endswith(".py"):
@@ -119,7 +131,7 @@ def read_dir(dirname):
     for d in dirs:
         fullpath = "{0}/{1}".format(dirname, d)
         if os.path.isfile(fullpath):
-            reader = createReader(fullpath)
+            reader = create_reader(fullpath)
             arr = reader.read_file(fullpath)
             #print_stats(arr)
         else:
@@ -149,7 +161,7 @@ print("\n")
 print(name, "\n")
 
 if os.path.isfile(name):
-    reader = createReader(name)
+    reader = create_reader(name)
     arr = reader.read_file(name)
     print_stats(arr)
 
