@@ -107,6 +107,70 @@ class JavaReader(Reader):
         except UnicodeDecodeError as err:
             pass
 
+
+class WebReader(Reader):
+
+    def __init__(self, counters):
+        super(WebReader, self).__init__(counters)
+
+    def read_file(self, filename):
+        try:
+            f = open(filename)
+            self.counters.totalfiles += 1
+            flag = False
+
+            for line in f:
+                self.counters.totallines += 1
+                if flag:
+                    self.counters.totalcomments += 1
+                    if line.startswith("=end"):
+                        flag = False
+
+                if line.isspace():
+                    self.counters.totalblanks += 1
+                if line.startswith("#"):
+                    self.counters.totalcomments += 1
+
+                if line.startswith("=begin"):
+                    flag = True
+                    self.counters.totalcomments += 1
+
+        except IOError as err:
+            pass
+
+        except UnicodeDecodeError as err:
+            pass
+
+
+class RubyReader(Reader):
+
+    def __init__(self, counters):
+        super(RubyReader, self).__init__(counters)
+
+    def read_file(self, filename):
+        try:
+            f = open(filename)
+            self.counters.totalfiles += 1
+            flag = False
+
+            for line in f:
+                self.counters.totallines += 1
+                if flag:
+                    self.counters.totalcomments += 1
+                    if line.find("-->") < 0:
+                        flag = False
+                if line.isspace():
+                    self.counters.totalblanks += 1
+                if line.find("<!--") > 0:
+                    flag = True
+                    self.counters.totalcomments += 1
+
+        except IOError as err:
+            pass
+
+        except UnicodeDecodeError as err:
+            pass
+
 # ----------------------------------------------------------------------
 
 
@@ -154,6 +218,30 @@ def create_reader(filename):
             c = Counters()
             counters_dict["C Shell"] = c
         return JavaReader(c)
+
+    elif filename.endswith(".css"):
+        if "CSS" in counters_dict:
+            c = counters_dict["CSS"]
+        else:
+            c = Counters()
+            counters_dict["CSS"] = c
+        return JavaReader(c)
+
+    elif filename.endswith(".html") or filename.endswith(".html.erb"):
+        if "HTML" in counters_dict:
+            c = counters_dict["HTML"]
+        else:
+            c = Counters()
+            counters_dict["HTML"] = c
+        return WebReader(c)
+
+    elif filename.endswith(".rb"):
+        if "Ruby" in counters_dict:
+            c = counters_dict["Ruby"]
+        else:
+            c = Counters()
+            counters_dict["Ruby"] = c
+        return RubyReader(c)
 
     else:
         if "Other" in counters_dict:
