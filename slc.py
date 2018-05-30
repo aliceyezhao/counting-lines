@@ -46,13 +46,30 @@ class PythonReader(Reader):
             linecounter = 0
             blanklines = 0
             comments = 0
+            flagsingle = False
+            flagdouble = False
 
             for line in f:
                 linecounter += 1
+
+                if flagsingle:
+                    comments += 1
+                    flagsingle = line.find("'''") == -1
+                if flagdouble:
+                    comments += 1
+                    flagdouble = line.find('"""') == -1
+
                 if line.isspace():
                     blanklines += 1
                 if line.startswith("#"):
                     comments += 1
+
+                if line.startswith("'''"):
+                    flagsingle = True
+                    comments += 1
+                if line.startswith('"""'):
+                    comments += 1
+                    flagdouble = True
 
             PythonReader.totallines += linecounter
             PythonReader.totalblanks += blanklines
@@ -84,20 +101,15 @@ class JavaReader(Reader):
             flag = False
 
             for line in f:
-                print(flag, linecounter)
                 linecounter += 1
                 if flag:
-                    print("a") #4
                     comments += 1
-                    flag = not line.endswith("*/")
+                    flag = line.find("*/") == -1
                 if line.isspace():
-                    print("b") #10
                     blanklines += 1
                 if line.startswith("//"):
-                    print("c") #5
                     comments += 1
                 if line.startswith("/*") or line.startswith("/**"):
-                    print("d") #1
                     flag = True
                     comments += 1
 
