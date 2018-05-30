@@ -215,12 +215,12 @@ name = sys.argv[1]
 print("\n")
 print(name, "\n")
 
-# if os.path.isfile(name):
-#     reader = create_reader(name)
-#     reader.read_file(name)
-#     print_stats()
+if os.path.isfile(name):
+    reader = create_reader(name)
+    reader.read_file(name)
+    print_stats()
 
-if os.path.isdir(name) or os.path.isfile(name):
+elif os.path.isdir(name):
     read_dir(name)
     print_stats()
 
