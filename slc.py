@@ -186,7 +186,8 @@ class RubyReader(Reader):
 
 # ----------------------------------------------------------------------
 
-# counters_dict and reader_map both have ext as keys
+# counters_dict keys are language names (langname)
+
 
 counters_dict = dict()
 
@@ -194,12 +195,14 @@ reader_map = {
     ".py": {"name": "Python", "reader": PythonReader},
     ".java": {"name": "Java", "reader": JavaReader},
     ".cpp": {"name": "C++", "reader": JavaReader},
+    ".c++": {"name": "C++", "reader": JavaReader},
+    ".cxx": {"name": "C++", "reader": JavaReader},
     ".c": {"name": "C", "reader": JavaReader},
     ".cs": {"name": "C Shell", "reader": JavaReader},
     ".css": {"name": "CSS", "reader": JavaReader},
     ".html": {"name": "HTML", "reader": HTMLReader},
     ".rb": {"name": "Ruby", "reader": RubyReader},
-    #"[other]": {"name": "Other", "reader": Reader},
+    "[other]": {"name": "Other", "reader": Reader},
 }
 
 
@@ -209,15 +212,17 @@ def create_reader(filename):
     if ext in reader_map:
         lang = reader_map[ext]
         reader = lang["reader"]
+        langname = lang["name"]
     else:
-        #ext = "[other]"
-        reader = Reader
+        lang = reader_map["[other]"]
+        reader = lang["reader"]
+        langname = lang["name"]
 
-    if ext in counters_dict:
-        c = counters_dict[ext]
+    if langname in counters_dict:
+        c = counters_dict[langname]
     else:
         c = Counters()
-        counters_dict[ext] = c
+        counters_dict[langname] = c
 
     return reader(c)
 
@@ -318,13 +323,10 @@ def print_stats():
     lines = 0
     blanks = 0
     comments = 0
+
     for key in counters_dict:
         print("\n")
-        if key in reader_map:
-            get_name = reader_map[key]
-            print(get_name["name"])
-        else:
-            print("Other")
+        print(key)
 
         counterobject = counters_dict[key]
         sizeformat = prefix(counterobject.totalsize)
