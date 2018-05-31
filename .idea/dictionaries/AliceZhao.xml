@@ -5,6 +5,7 @@
       <w>totalcomments</w>
       <w>totalfiles</w>
       <w>totallines</w>
+      <w>totalsize</w>
     </words>
   </dictionary>
 </component>
